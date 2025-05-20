@@ -270,9 +270,9 @@ def quantum_fusion_layer(node_features, weights, coupling):
 
 
 # 定义QCNN为PyTorch模块
-class QMFNN(nn.Module):
+class QGHL(nn.Module):
     def __init__(self, n_qubits, weights, coupling):
-        super(QMFNN, self).__init__()
+        super(QGHL, self).__init__()
         self.n_qubits = n_qubits
         self.weights = nn.Parameter(weights)
         self.coupling = nn.Parameter(coupling)
@@ -293,7 +293,7 @@ class NerualNetwork(nn.Module):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.best_acc = 0
 
-    def mdegcn(self, x_tid, x_text, y, loss, i, total):
+    def EQGFNet(self, x_tid, x_text, y, loss, i, total):
         self.optimizer.zero_grad()
         logit_origin, dist = self.forward(x_tid, x_text)
         loss_classofication = loss(logit_origin, y)
@@ -333,7 +333,7 @@ class NerualNetwork(nn.Module):
                     pbar.update(1)
                     total = len(dataloader)
                     batch_x_tid, batch_x_text, batch_y = (item.cuda(device=self.device) for item in data)
-                    self.mdegcn(batch_x_tid, batch_x_text, batch_y, loss, i, total)
+                    self.EQGFNet(batch_x_tid, batch_x_text, batch_y, loss, i, total)
 
                     if self.init_clip_max_norm is not None:
                         utils.clip_grad_norm_(self.parameters(), max_norm=self.init_clip_max_norm)
@@ -397,7 +397,7 @@ class NerualNetwork(nn.Module):
             print("saved model at ", self.config['save_path'])
 
     def predict(self, config, X_test_tid, X_test):
-        model = MDEGCN(config)
+        model = EQGFNet(config)
         model.load_state_dict(torch.load(self.config['save_path']))
         model.to(device)
         model.eval()
@@ -419,9 +419,9 @@ class NerualNetwork(nn.Module):
         return y_pred
 
 
-class MDEGCN(NerualNetwork):
+class EQGFNet(NerualNetwork):
     def __init__(self, config):
-        super(MDEGCN, self).__init__()
+        super(EQGFNet, self).__init__()
         self.config = config
         self.newid2imgnum = config['newid2imgnum']
         dropout_rate = config['dropout']
@@ -434,7 +434,7 @@ class MDEGCN(NerualNetwork):
         qbits3 = 8
         weights3 = torch.randn(3 * qbits3 + 6 * (qbits3 * (qbits3 - 1) // 2), requires_grad=True)
         coupling3 = torch.tensor(np.random.random((qbits3, qbits3)), requires_grad=True)
-        self.qmfnn = QMFNN(qbits3, weights3, coupling3)
+        self.QGHL = QGHL(qbits3, weights3, coupling3)
 
         self.feats = [torch.tensor(feat.toarray()).float() for feat in self.feats]
         self.pyg_graphs = self._build_pyg_graphs()
@@ -517,9 +517,9 @@ class MDEGCN(NerualNetwork):
         q_input = self.fc5(q_input)
         q_input = self.fc6(q_input)
         #print(q_input.shape)
-        qmfnn = self.qmfnn
-        qmfnn.to(device)
-        outputs = qmfnn(q_input)
+        QGHL = self.QGHL
+        QGHL.to(device)
+        outputs = QGHL(q_input)
         outputs = outputs.to(torch.float32)
         # print(outputs.shape)
         outputs = self.fc7(outputs)
@@ -624,13 +624,13 @@ def train_and_test(model):
     X_dev = torch.stack([torch.Tensor(ele) for ele in X_dev]).squeeze()
     X_test = torch.stack([torch.Tensor(ele) for ele in X_test]).squeeze()
 
-    print('MDEGCN Instantiating')
+    print('EQGFNet Instantiating')
     nn = model(config)
     nn.print_num_parameters()
 
-    print('MDEGCN Training')
+    print('EQGFNet Training')
     nn.fit(X_train_tid, X_train, y_train, X_dev_tid, X_dev, y_dev,X_test_tid,X_test,y_test)
-    print('MDEGCN Testing')
+    print('EQGFNet Testing')
     y_pred = nn.predict(config, X_test_tid, X_test)
     # print(y_pred)
     # print(y_test)
@@ -661,7 +661,7 @@ torch.cuda.manual_seed(seed)
 np.random.seed(seed)
 random.seed(seed)
 
-model = MDEGCN
+model = EQGFNet
 
 train_and_test(model)
 
