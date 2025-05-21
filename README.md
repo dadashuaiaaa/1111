@@ -35,5 +35,5 @@ pip install -r requirements.txt
  
  ```
  cd ./graph_part
- python pheme_threemodal.py 
+ python pheme_qghl_ising.py
  ```
